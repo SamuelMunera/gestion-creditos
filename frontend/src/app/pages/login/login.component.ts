@@ -19,7 +19,7 @@ import { AuthService } from '../../services/auth.service';
             name="usuario"
             [(ngModel)]="usuario"
             autocomplete="username"
-            placeholder="admin"
+            placeholder="Usuario"
             required
           />
         </label>
@@ -43,8 +43,6 @@ import { AuthService } from '../../services/auth.service';
         <button type="submit" [disabled]="cargando()">
           {{ cargando() ? 'Entrando…' : 'Entrar' }}
         </button>
-
-        <p class="hint">Demo: <b>admin</b> / <b>1234</b></p>
       </form>
     </div>
   `,
@@ -120,12 +118,6 @@ import { AuthService } from '../../services/auth.service';
       background: #fef2f2;
       padding: 0.6rem 0.8rem;
       border-radius: 8px;
-    }
-    .hint {
-      margin: 0;
-      text-align: center;
-      color: #94a3b8;
-      font-size: 0.8rem;
     }
   `,
 })

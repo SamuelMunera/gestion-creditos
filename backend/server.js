@@ -31,7 +31,7 @@ app.use(express.json());
 
 // --- "Base de datos" en memoria (sencillo, sin BD real) ---
 const USUARIOS_LOGIN = [
-  { usuario: "admin", clave: "1234", nombre: "Administrador" },
+  { usuario: "Hector", clave: "6611", nombre: "Hector" },
 ];
 
 // Datos de ejemplo (semilla) por si aún no existe el archivo local

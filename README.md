@@ -3,10 +3,10 @@
 App de ejemplo con **Node.js (Express + JWT)** en el backend y **Angular** en el frontend.
 Flujo: pantalla de **login** → si las credenciales son válidas, entra al **dashboard** con una **tabla** de créditos. Al hacer clic en una fila se despliega el detalle (valor crédito, valor cuota, fecha de pago, cuotas restantes).
 
-## Credenciales de prueba
+## Credenciales
 
-- Usuario: `admin`
-- Contraseña: `1234`
+- Usuario: `Hector`
+- Contraseña: `6611`
 
 ## Estructura
 
