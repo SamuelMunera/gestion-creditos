@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +9,11 @@ import { fileURLToPath } from "node:url";
 const app = express();
 const PORT = 3000;
 const JWT_SECRET = "cambia-esta-clave-secreta"; // en producción usar variable de entorno
+
+// Cadena de conexión a MongoDB. Por defecto usa el Mongo local (servicio de Windows).
+// Se puede sobrescribir con la variable de entorno MONGODB_URI (por ejemplo, MongoDB Atlas).
+const MONGODB_URI =
+  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/creditos";
 
 app.use(cors());
 app.use(express.json());
@@ -27,32 +33,68 @@ const SEMILLA = [
   { id: 6, nombre: "Jorge Vega",   fechaInicial: "2026-08-11", fechaFinal: "2027-05-18", valorProducto: 9000000, valorIntereses: 900000, tipoInteres: "fijo",       valorCuota: 412500, frecuenciaPago: 7,  fechaPago: "2026-08-18", cantidadCuotas: 24, cuotasRestantes: 24, historialPagos: [] },
 ];
 
-// --- Persistencia local: se guardan/leen los créditos en un archivo JSON ---
+// --- Modelo de MongoDB (Mongoose) ---
+// Se conserva el campo `id` numérico para no cambiar el frontend; ademas ocultamos
+// los campos internos de Mongo (`_id`, `__v`) al serializar a JSON.
+const creditoSchema = new mongoose.Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    nombre: { type: String, required: true },
+    fechaInicial: String,
+    fechaFinal: String,
+    valorProducto: Number,
+    valorIntereses: Number,
+    tipoInteres: { type: String, enum: ["porcentaje", "fijo"], default: "porcentaje" },
+    valorCuota: Number,
+    frecuenciaPago: Number,
+    fechaPago: String,
+    cantidadCuotas: Number,
+    cuotasRestantes: Number,
+    historialPagos: { type: [String], default: [] },
+  },
+  {
+    versionKey: false,
+    toJSON: {
+      transform(_doc, ret) {
+        delete ret._id;
+        return ret;
+      },
+    },
+  }
+);
+
+const Credito = mongoose.model("Credito", creditoSchema);
+
+// --- Migración/semilla: en el primer arranque, si la colección está vacía,
+// se cargan los créditos existentes de datos.json (si existe) o la semilla. ---
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ARCHIVO_DATOS = path.join(__dirname, "datos.json");
 
-function cargarDatos() {
+async function inicializarDatos() {
+  const total = await Credito.estimatedDocumentCount();
+  if (total > 0) return;
+
+  let iniciales = SEMILLA;
   try {
     if (fs.existsSync(ARCHIVO_DATOS)) {
-      return JSON.parse(fs.readFileSync(ARCHIVO_DATOS, "utf-8"));
+      const previos = JSON.parse(fs.readFileSync(ARCHIVO_DATOS, "utf-8"));
+      if (Array.isArray(previos) && previos.length) {
+        iniciales = previos;
+        console.log(`Migrando ${previos.length} crédito(s) desde datos.json a MongoDB...`);
+      }
     }
   } catch (e) {
-    console.error("No se pudo leer datos.json, se usan los datos de ejemplo:", e.message);
+    console.error("No se pudo leer datos.json, se usa la semilla:", e.message);
   }
-  return SEMILLA;
+
+  await Credito.insertMany(iniciales);
+  console.log(`Base de datos inicializada con ${iniciales.length} crédito(s).`);
 }
 
-function guardarDatos() {
-  try {
-    fs.writeFileSync(ARCHIVO_DATOS, JSON.stringify(CREDITOS, null, 2), "utf-8");
-  } catch (e) {
-    console.error("No se pudo guardar datos.json:", e.message);
-  }
-}
-
-let CREDITOS = cargarDatos();
-if (!fs.existsSync(ARCHIVO_DATOS)) {
-  guardarDatos(); // crea el archivo la primera vez
+// El siguiente id numérico disponible (equivale al viejo Math.max(...ids) + 1).
+async function siguienteId() {
+  const ultimo = await Credito.findOne().sort({ id: -1 }).lean();
+  return ultimo ? ultimo.id + 1 : 1;
 }
 
 // --- Utilidades de fechas (formato YYYY-MM-DD) ---
@@ -104,11 +146,17 @@ app.post("/api/login", (req, res) => {
   res.json({ token, nombre: encontrado.nombre });
 });
 
-app.get("/api/creditos", verificarToken, (req, res) => {
-  res.json(CREDITOS);
+app.get("/api/creditos", verificarToken, async (req, res) => {
+  try {
+    const creditos = await Credito.find().sort({ id: 1 });
+    res.json(creditos);
+  } catch (e) {
+    console.error("Error al listar créditos:", e.message);
+    res.status(500).json({ mensaje: "Error al consultar la base de datos" });
+  }
 });
 
-app.post("/api/creditos", verificarToken, (req, res) => {
+app.post("/api/creditos", verificarToken, async (req, res) => {
   const {
     nombre,
     fechaInicial,
@@ -126,10 +174,6 @@ app.post("/api/creditos", verificarToken, (req, res) => {
       .json({ mensaje: "El nombre y la fecha inicial son obligatorios" });
   }
 
-  const nuevoId = CREDITOS.length
-    ? Math.max(...CREDITOS.map((c) => c.id)) + 1
-    : 1;
-
   // Solo se permiten 7, 15 o 30 días; por defecto 30.
   const frecuencia = [7, 15, 30].includes(Number(frecuenciaPago))
     ? Number(frecuenciaPago)
@@ -146,65 +190,89 @@ app.post("/api/creditos", verificarToken, (req, res) => {
   // El valor de la cuota se calcula automáticamente: (producto + intereses) / cuotas.
   const valorCuota = cuotas > 0 ? Math.round((producto + montoIntereses) / cuotas) : 0;
 
-  const nuevo = {
-    id: nuevoId,
-    nombre,
-    fechaInicial,
-    // La fecha final se calcula: fecha inicial + (frecuencia * cantidad de cuotas).
-    fechaFinal: cuotas > 0 ? sumarDias(fechaInicial, frecuencia * cuotas) : fechaInicial,
-    valorProducto: producto,
-    valorIntereses: intereses,
-    tipoInteres: tipo,
-    valorCuota,
-    frecuenciaPago: frecuencia,
-    // La próxima fecha de pago se calcula: fecha inicial + frecuencia.
-    fechaPago: sumarDias(fechaInicial, frecuencia),
-    cantidadCuotas: cuotas,
-    cuotasRestantes: Number(cuotasRestantes) || 0,
-    historialPagos: [],
-  };
-
-  CREDITOS.push(nuevo);
-  guardarDatos();
-  res.status(201).json(nuevo);
+  try {
+    const nuevo = await Credito.create({
+      id: await siguienteId(),
+      nombre,
+      fechaInicial,
+      // La fecha final se calcula: fecha inicial + (frecuencia * cantidad de cuotas).
+      fechaFinal: cuotas > 0 ? sumarDias(fechaInicial, frecuencia * cuotas) : fechaInicial,
+      valorProducto: producto,
+      valorIntereses: intereses,
+      tipoInteres: tipo,
+      valorCuota,
+      frecuenciaPago: frecuencia,
+      // La próxima fecha de pago se calcula: fecha inicial + frecuencia.
+      fechaPago: sumarDias(fechaInicial, frecuencia),
+      cantidadCuotas: cuotas,
+      cuotasRestantes: Number(cuotasRestantes) || 0,
+      historialPagos: [],
+    });
+    res.status(201).json(nuevo);
+  } catch (e) {
+    console.error("Error al crear crédito:", e.message);
+    res.status(500).json({ mensaje: "Error al guardar en la base de datos" });
+  }
 });
 
 // Registrar un pago: baja una cuota y avanza la próxima fecha de pago.
-app.post("/api/creditos/:id/pago", verificarToken, (req, res) => {
+app.post("/api/creditos/:id/pago", verificarToken, async (req, res) => {
   const id = Number(req.params.id);
-  const credito = CREDITOS.find((c) => c.id === id);
-  if (!credito) {
-    return res.status(404).json({ mensaje: "Crédito no encontrado" });
-  }
+  try {
+    const credito = await Credito.findOne({ id });
+    if (!credito) {
+      return res.status(404).json({ mensaje: "Crédito no encontrado" });
+    }
 
-  if (credito.cuotasRestantes > 0) {
-    // La fecha del pago la confirma el usuario; si no viene, se usa hoy.
-    const fecha = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.fecha || "")
-      ? req.body.fecha
-      : hoyISO();
-    if (!Array.isArray(credito.historialPagos)) credito.historialPagos = [];
-    credito.historialPagos.push(fecha);
-    credito.cuotasRestantes -= 1;
-    credito.fechaPago = sumarDias(credito.fechaPago, credito.frecuenciaPago || 30);
-    guardarDatos();
-  }
+    if (credito.cuotasRestantes > 0) {
+      // La fecha del pago la confirma el usuario; si no viene, se usa hoy.
+      const fecha = /^\d{4}-\d{2}-\d{2}$/.test(req.body?.fecha || "")
+        ? req.body.fecha
+        : hoyISO();
+      credito.historialPagos.push(fecha);
+      credito.cuotasRestantes -= 1;
+      credito.fechaPago = sumarDias(credito.fechaPago, credito.frecuenciaPago || 30);
+      await credito.save();
+    }
 
-  res.json(credito);
+    res.json(credito);
+  } catch (e) {
+    console.error("Error al registrar pago:", e.message);
+    res.status(500).json({ mensaje: "Error al actualizar la base de datos" });
+  }
 });
 
 // Eliminar (hard delete) un crédito.
-app.delete("/api/creditos/:id", verificarToken, (req, res) => {
+app.delete("/api/creditos/:id", verificarToken, async (req, res) => {
   const id = Number(req.params.id);
-  const indice = CREDITOS.findIndex((c) => c.id === id);
-  if (indice === -1) {
-    return res.status(404).json({ mensaje: "Crédito no encontrado" });
+  try {
+    const eliminado = await Credito.findOneAndDelete({ id });
+    if (!eliminado) {
+      return res.status(404).json({ mensaje: "Crédito no encontrado" });
+    }
+    res.json({ ok: true });
+  } catch (e) {
+    console.error("Error al eliminar crédito:", e.message);
+    res.status(500).json({ mensaje: "Error al actualizar la base de datos" });
   }
-
-  CREDITOS.splice(indice, 1);
-  guardarDatos();
-  res.json({ ok: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`API escuchando en http://localhost:${PORT}`);
-});
+// --- Conexión a MongoDB y arranque del servidor ---
+async function iniciar() {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log(`Conectado a MongoDB: ${MONGODB_URI}`);
+    await inicializarDatos();
+    app.listen(PORT, () => {
+      console.log(`API escuchando en http://localhost:${PORT}`);
+    });
+  } catch (e) {
+    console.error("No se pudo conectar a MongoDB:", e.message);
+    console.error(
+      "Verifica que el servicio de MongoDB esté corriendo, o define MONGODB_URI."
+    );
+    process.exit(1);
+  }
+}
+
+iniciar();

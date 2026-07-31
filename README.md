@@ -12,7 +12,7 @@ Flujo: pantalla de **login** → si las credenciales son válidas, entra al **da
 
 ```
 papá/
-├─ backend/          API en Node.js (Express)
+├─ backend/          API en Node.js (Express + Mongoose/MongoDB)
 │  └─ server.js      Login (JWT) + endpoint /api/creditos protegido
 ├─ frontend/         App Angular (login + dashboard)
 │  └─ src/app/
@@ -36,6 +36,11 @@ node backend/server.js
 ```
 
 o doble clic en `iniciar-backend.cmd`.
+
+> Requiere **MongoDB** corriendo. En este equipo ya está instalado como servicio
+> de Windows ("MongoDB Server") y escucha en `localhost:27017`, así que no hay que
+> hacer nada más. Para usar otra base (p. ej. MongoDB Atlas), define la variable
+> `MONGODB_URI` antes de arrancar.
 
 **2) Frontend** (puerto 4200):
 
@@ -81,9 +86,13 @@ Luego abre http://localhost:4200
 - **Eliminar:** el botón "Eliminar" abre una ventana de confirmación donde hay
   que escribir la palabra **confirmar**; entonces se envía `DELETE
   /api/creditos/:id` (borrado permanente).
-- **Guardado permanente:** los créditos se guardan en `backend/datos.json`, así
-  que **no se pierden al reiniciar** el servidor. Si borras ese archivo, vuelven
-  a aparecer los 6 datos de ejemplo.
+- **Guardado permanente (MongoDB):** los créditos se guardan en una base de datos
+  **MongoDB** (base `creditos`, colección `creditos`), así que **no se pierden al
+  reiniciar** el servidor. En el primer arranque, si la colección está vacía, se
+  cargan automáticamente los datos de `backend/datos.json` (si existe) o, en su
+  defecto, los 6 créditos de ejemplo. El backend se conecta por defecto al Mongo
+  local (`mongodb://127.0.0.1:27017/creditos`); se puede apuntar a otro servidor
+  (por ejemplo MongoDB Atlas) definiendo la variable de entorno `MONGODB_URI`.
 - **Imprimir:** el botón "🖨 Imprimir" abre el diálogo de impresión del navegador
   con una tabla limpia (todos los datos, sin menús ni botones). Desde ahí puedes
   imprimir en papel o "Guardar como PDF".
