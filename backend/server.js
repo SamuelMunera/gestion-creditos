@@ -6,9 +6,20 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Carga las variables del archivo backend/.env (Node 24 trae loadEnvFile nativo,
+// sin necesidad de instalar dotenv). Si no existe el .env, se sigue con los
+// valores por defecto de más abajo.
+try {
+  process.loadEnvFile(path.join(__dirname, ".env"));
+} catch {
+  console.warn("No se encontró backend/.env; se usan los valores por defecto.");
+}
+
 const app = express();
-const PORT = 3000;
-const JWT_SECRET = "cambia-esta-clave-secreta"; // en producción usar variable de entorno
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || "cambia-esta-clave-secreta";
 
 // Cadena de conexión a MongoDB. Por defecto usa el Mongo local (servicio de Windows).
 // Se puede sobrescribir con la variable de entorno MONGODB_URI (por ejemplo, MongoDB Atlas).
@@ -67,7 +78,6 @@ const Credito = mongoose.model("Credito", creditoSchema);
 
 // --- Migración/semilla: en el primer arranque, si la colección está vacía,
 // se cargan los créditos existentes de datos.json (si existe) o la semilla. ---
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ARCHIVO_DATOS = path.join(__dirname, "datos.json");
 
 async function inicializarDatos() {
