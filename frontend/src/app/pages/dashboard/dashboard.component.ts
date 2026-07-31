@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 type TipoInteres = 'porcentaje' | 'fijo';
 
@@ -1052,7 +1053,7 @@ export class DashboardComponent implements OnInit {
   private http = inject(HttpClient);
   private auth = inject(AuthService);
   private router = inject(Router);
-  private readonly apiUrl = 'http://localhost:3000/api/creditos';
+  private readonly apiUrl = `${environment.apiUrl}/creditos`;
 
   nombre = this.auth.nombre;
   creditos = signal<Credito[]>([]);

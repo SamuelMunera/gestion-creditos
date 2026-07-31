@@ -58,6 +58,35 @@ Luego abre http://localhost:4200
 > dependencias ya quedaron instaladas. Si más adelante quieres reparar `npm`,
 > lo más sencillo es reinstalar Node.js desde https://nodejs.org
 
+## Despliegue en Vercel
+
+El proyecto se despliega como **un solo proyecto de Vercel** que sirve el
+frontend Angular (estático) y el backend Express como **funciones serverless**
+bajo `/api`. Así el frontend llama a `/api` (mismo dominio, sin CORS).
+
+Piezas que lo hacen posible:
+
+- `api/[...path].js` — entrada serverless que expone la app Express.
+- `backend/app.js` — la app Express reutilizable (con la conexión a MongoDB
+  cacheada entre invocaciones). `backend/server.js` solo se usa en local.
+- `package.json` (raíz) — dependencias del backend para la función.
+- `vercel.json` (raíz) — construye el frontend y enruta `/api/*` a la función y
+  el resto al `index.html` (SPA).
+- `frontend/src/environments/` — en local la API es `http://localhost:3000/api`;
+  en producción es `/api` (relativa).
+
+**Pasos en el panel de Vercel (una sola vez):**
+
+1. Proyecto conectado al repo de GitHub.
+2. **Settings → General → Root Directory = `./`** (la raíz del repo, no `frontend`).
+3. **Settings → Environment Variables**, añade:
+   - `MONGODB_URI` = la cadena de conexión de **MongoDB Atlas**
+     (`mongodb+srv://usuario:clave@cluster.mongodb.net/creditos`).
+   - `JWT_SECRET` = una cadena larga y aleatoria.
+4. En Atlas, en **Network Access**, permite el acceso desde Vercel
+   (lo más simple: `0.0.0.0/0`, "allow from anywhere").
+5. Redespliega. El frontend queda en `/` y la API en `/api/...`.
+
 ## Cómo está hecho
 
 - **Login:** el frontend envía usuario/clave a `POST /api/login`. Si son
