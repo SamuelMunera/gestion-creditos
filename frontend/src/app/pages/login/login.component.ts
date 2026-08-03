@@ -10,6 +10,14 @@ import { AuthService } from '../../services/auth.service';
   template: `
     <div class="login-page">
       <form class="card" (ngSubmit)="entrar()">
+        <div class="marca">
+          <span class="marca-logo">GC</span>
+          <div class="marca-text">
+            <strong>Gestión de Créditos</strong>
+            <small>Panel administrativo</small>
+          </div>
+        </div>
+
         <h1>Iniciar sesión</h1>
         <p class="subtitulo">Ingresa tus credenciales para continuar</p>
 
@@ -51,61 +59,105 @@ import { AuthService } from '../../services/auth.service';
       min-height: 100vh;
       display: grid;
       place-items: center;
-      padding: 1rem;
+      padding: 1.5rem;
+      background:
+        radial-gradient(900px 500px at 100% 0%, rgba(37, 99, 235, 0.28), transparent 60%),
+        radial-gradient(800px 500px at 0% 100%, rgba(59, 130, 246, 0.16), transparent 55%),
+        linear-gradient(155deg, var(--brand-950) 0%, var(--brand-800) 100%);
     }
     .card {
       width: 100%;
-      max-width: 360px;
-      background: #fff;
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 10px 40px rgba(15, 23, 42, 0.12);
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem;
+      box-shadow: var(--shadow-lg);
       display: flex;
       flex-direction: column;
       gap: 1rem;
     }
+    .marca {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .marca-logo {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(140deg, var(--primary) 0%, var(--primary-strong) 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 1.05rem;
+      letter-spacing: 0.02em;
+      box-shadow: 0 6px 16px var(--primary-ring);
+    }
+    .marca-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .marca-text strong {
+      font-size: 0.98rem;
+      color: var(--text);
+    }
+    .marca-text small {
+      font-size: 0.76rem;
+      color: var(--text-subtle);
+    }
     h1 {
-      margin: 0;
+      margin: 0.25rem 0 0;
       font-size: 1.5rem;
-      color: #0f172a;
+      color: var(--text);
     }
     .subtitulo {
-      margin: -0.5rem 0 0.5rem;
-      color: #64748b;
+      margin: -0.4rem 0 0.5rem;
+      color: var(--text-muted);
       font-size: 0.9rem;
     }
     label {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      font-size: 0.85rem;
+      gap: 0.4rem;
+      font-size: 0.82rem;
       font-weight: 600;
       color: #334155;
     }
     input {
-      padding: 0.7rem 0.8rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
+      padding: 0.72rem 0.85rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius);
       font-size: 1rem;
+      font-family: inherit;
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     input:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-ring);
     }
     button {
-      margin-top: 0.5rem;
-      padding: 0.75rem;
+      margin-top: 0.6rem;
+      padding: 0.8rem;
       border: none;
-      border-radius: 10px;
-      background: #6366f1;
+      border-radius: var(--radius);
+      background: linear-gradient(140deg, var(--primary) 0%, var(--primary-strong) 100%);
       color: #fff;
       font-size: 1rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
+      transition: filter 0.15s, transform 0.05s;
     }
     button:hover:not(:disabled) {
-      background: #4f46e5;
+      filter: brightness(1.06);
+    }
+    button:active:not(:disabled) {
+      transform: translateY(1px);
     }
     button:disabled {
       opacity: 0.6;
@@ -113,11 +165,12 @@ import { AuthService } from '../../services/auth.service';
     }
     .error {
       margin: 0;
-      color: #dc2626;
+      color: var(--danger-strong);
       font-size: 0.85rem;
-      background: #fef2f2;
+      background: var(--danger-soft);
+      border: 1px solid var(--danger-border);
       padding: 0.6rem 0.8rem;
-      border-radius: 8px;
+      border-radius: var(--radius-sm);
     }
   `,
 })

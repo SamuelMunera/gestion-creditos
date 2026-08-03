@@ -40,10 +40,18 @@ interface FormularioCredito {
   imports: [FormsModule],
   template: `
     <header class="barra">
-      <h1>Panel de control</h1>
-      <div class="usuario">
-        <span>Hola, <b>{{ nombre }}</b></span>
-        <button (click)="salir()">Cerrar sesión</button>
+      <div class="barra-inner">
+        <div class="marca">
+          <span class="marca-logo">GC</span>
+          <div class="marca-text">
+            <strong>Gestión de Créditos</strong>
+            <small>Panel administrativo</small>
+          </div>
+        </div>
+        <div class="usuario">
+          <span class="usuario-nombre">Hola, <b>{{ nombre }}</b></span>
+          <button (click)="salir()">Cerrar sesión</button>
+        </div>
       </div>
     </header>
 
@@ -476,16 +484,49 @@ interface FormularioCredito {
   `,
   styles: `
     .barra {
+      background: linear-gradient(120deg, var(--brand-950) 0%, var(--brand-800) 100%);
+      color: #fff;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    }
+    .barra-inner {
+      max-width: var(--container);
+      margin: 0 auto;
+      padding: 0.9rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 1rem 1.5rem;
-      background: #0f172a;
-      color: #fff;
+      gap: 1rem;
     }
-    .barra h1 {
-      margin: 0;
-      font-size: 1.2rem;
+    .marca {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+    .marca-logo {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(140deg, var(--primary) 0%, var(--primary-strong) 100%);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.92rem;
+      letter-spacing: 0.02em;
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+    }
+    .marca-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .marca-text strong {
+      font-size: 0.98rem;
+      font-weight: 700;
+    }
+    .marca-text small {
+      font-size: 0.74rem;
+      color: #94a3b8;
     }
     .usuario {
       display: flex;
@@ -493,25 +534,38 @@ interface FormularioCredito {
       gap: 1rem;
       font-size: 0.9rem;
     }
+    .usuario-nombre {
+      color: #cbd5e1;
+    }
+    .usuario-nombre b {
+      color: #fff;
+    }
     .usuario button {
-      padding: 0.45rem 0.9rem;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      background: transparent;
+      padding: 0.5rem 1rem;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
       color: #e2e8f0;
+      font-family: inherit;
+      font-weight: 600;
       cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
     }
     .usuario button:hover {
-      background: #1e293b;
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(148, 163, 184, 0.6);
     }
     .contenido {
-      padding: 1.5rem;
+      max-width: var(--container);
+      margin: 0 auto;
+      padding: 1.75rem 1.5rem 3rem;
     }
     .tarjeta {
-      background: #fff;
-      border-radius: 14px;
-      padding: 1.5rem;
-      box-shadow: 0 6px 24px rgba(15, 23, 42, 0.08);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow);
     }
     .tarjeta-cabecera {
       display: flex;
@@ -522,27 +576,33 @@ interface FormularioCredito {
     }
     .tarjeta h2 {
       margin: 0 0 0.25rem;
-      font-size: 1.1rem;
-      color: #0f172a;
+      font-size: 1.15rem;
+      color: var(--text);
     }
     .ayuda {
       margin: 0;
-      color: #94a3b8;
+      color: var(--text-subtle);
       font-size: 0.82rem;
     }
     .btn-crear {
-      padding: 0.55rem 1.1rem;
+      padding: 0.6rem 1.15rem;
       border: none;
-      border-radius: 10px;
-      background: #6366f1;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(140deg, var(--primary) 0%, var(--primary-strong) 100%);
       color: #fff;
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
+      box-shadow: 0 2px 8px var(--primary-ring);
+      transition: filter 0.15s, transform 0.05s;
     }
     .btn-crear:hover:not(:disabled) {
-      background: #4f46e5;
+      filter: brightness(1.07);
+    }
+    .btn-crear:active:not(:disabled) {
+      transform: translateY(1px);
     }
     .btn-crear:disabled {
       opacity: 0.6;
@@ -553,143 +613,164 @@ interface FormularioCredito {
       gap: 0.6rem;
     }
     .btn-imprimir {
-      padding: 0.55rem 1.1rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: #fff;
+      padding: 0.6rem 1.15rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: #334155;
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       white-space: nowrap;
+      transition: background 0.15s, border-color 0.15s;
     }
     .btn-imprimir:hover {
-      background: #f1f5f9;
+      background: var(--surface-muted);
+      border-color: var(--text-subtle);
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.9rem;
+      font-size: 0.92rem;
     }
     th, td {
       text-align: left;
-      padding: 0.75rem 0.6rem;
+      padding: 0.8rem 0.75rem;
     }
-    th {
-      color: #64748b;
+    thead th {
+      background: var(--surface-muted);
+      color: var(--text-muted);
       font-weight: 600;
       text-transform: uppercase;
-      font-size: 0.72rem;
-      letter-spacing: 0.03em;
-      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      border-bottom: 1px solid var(--border);
     }
-    .col-num { width: 48px; }
-    .col-flecha { width: 40px; text-align: center; color: #94a3b8; }
+    thead th:first-child { border-top-left-radius: var(--radius-sm); }
+    thead th:last-child { border-top-right-radius: var(--radius-sm); }
+    .col-num { width: 52px; color: var(--text-subtle); font-variant-numeric: tabular-nums; }
+    .col-flecha { width: 40px; text-align: center; color: var(--text-subtle); }
     .fila {
       cursor: pointer;
+      transition: background 0.12s;
     }
     .fila:hover {
-      background: #f8fafc;
+      background: var(--primary-soft);
     }
     .fila td {
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
     }
     .detalle td {
-      background: #f8fafc;
-      border-bottom: 1px solid #e2e8f0;
+      background: var(--surface-muted);
+      border-bottom: 1px solid var(--border);
       padding: 0;
     }
     .detalle-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       gap: 1rem;
-      padding: 1rem 1.25rem 0.5rem;
+      padding: 1.25rem 1.25rem 0.75rem;
     }
     .detalle-grid div {
       display: flex;
       flex-direction: column;
-      gap: 0.2rem;
+      gap: 0.25rem;
     }
     .detalle-grid span {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: #64748b;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
     }
     .detalle-grid b {
       font-size: 1rem;
-      color: #0f172a;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
     .detalle-acciones {
       display: flex;
       gap: 0.6rem;
-      padding: 0.5rem 1.25rem 1.1rem;
+      padding: 0.5rem 1.25rem 1.25rem;
     }
     .btn-pago {
-      padding: 0.5rem 1.2rem;
+      padding: 0.55rem 1.25rem;
       border: none;
-      border-radius: 10px;
-      background: #16a34a;
+      border-radius: var(--radius-sm);
+      background: var(--success);
       color: #fff;
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
+      transition: background 0.15s, transform 0.05s;
     }
     .btn-pago:hover:not(:disabled) {
-      background: #15803d;
+      background: var(--success-strong);
+    }
+    .btn-pago:active:not(:disabled) {
+      transform: translateY(1px);
     }
     .btn-pago:disabled {
-      background: #94a3b8;
+      background: var(--text-subtle);
       cursor: not-allowed;
     }
     .btn-eliminar {
-      padding: 0.5rem 1.2rem;
-      border: 1px solid #fecaca;
-      border-radius: 10px;
-      background: #fff;
-      color: #dc2626;
+      padding: 0.55rem 1.25rem;
+      border: 1px solid var(--danger-border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--danger);
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
+      transition: background 0.15s;
     }
     .btn-eliminar:hover:not(:disabled) {
-      background: #fef2f2;
+      background: var(--danger-soft);
     }
     .btn-eliminar:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
     .btn-historial {
-      padding: 0.5rem 1.2rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: #fff;
+      padding: 0.55rem 1.25rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: #334155;
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
+      transition: background 0.15s;
     }
     .btn-historial:hover {
-      background: #f1f5f9;
+      background: var(--surface-muted);
     }
     .alerta-mora {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
-      color: #b91c1c;
-      padding: 0.7rem 1rem;
-      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--danger-soft);
+      border: 1px solid var(--danger-border);
+      color: var(--danger-strong);
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
       font-size: 0.88rem;
       font-weight: 600;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
     .badge-mora {
       display: inline-block;
       margin-left: 0.5rem;
-      padding: 0.12rem 0.5rem;
-      border-radius: 999px;
+      padding: 0.14rem 0.55rem;
+      border-radius: var(--radius-full);
       background: #fee2e2;
-      color: #b91c1c;
-      font-size: 0.7rem;
+      color: var(--danger-strong);
+      font-size: 0.68rem;
       font-weight: 700;
       vertical-align: middle;
     }
@@ -698,12 +779,12 @@ interface FormularioCredito {
       box-shadow: inset 3px 0 0 #ef4444;
     }
     .fila-mora:hover {
-      background: #fef2f2;
+      background: var(--danger-soft);
     }
     .lista-historial {
       margin: 0 0 0.5rem;
       padding-left: 1.4rem;
-      color: #0f172a;
+      color: var(--text);
       font-size: 0.95rem;
       max-height: 220px;
       overflow-y: auto;
@@ -712,53 +793,74 @@ interface FormularioCredito {
       padding: 0.15rem 0;
     }
     .error {
-      color: #dc2626;
-      margin: 0.5rem 0 0;
+      color: var(--danger-strong);
+      background: var(--danger-soft);
+      border: 1px solid var(--danger-border);
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      margin: 0.75rem 0 0;
     }
     .cargando {
-      color: #64748b;
+      color: var(--text-muted);
+      padding: 0.5rem 0;
     }
 
     /* --- Modal / formulario --- */
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(15, 23, 42, 0.5);
+      background: rgba(11, 17, 32, 0.55);
+      backdrop-filter: blur(2px);
       display: grid;
       place-items: center;
       padding: 1rem;
       z-index: 10;
+      animation: fade 0.15s ease-out;
     }
+    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
     .modal {
       width: 100%;
       max-width: 520px;
       max-height: 90vh;
       overflow-y: auto;
-      background: #fff;
-      border-radius: 16px;
-      padding: 1.5rem;
-      box-shadow: 0 20px 60px rgba(15, 23, 42, 0.3);
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: var(--shadow-lg);
+      animation: pop 0.16s ease-out;
     }
+    @keyframes pop { from { transform: translateY(8px) scale(0.99); opacity: 0; } to { transform: none; opacity: 1; } }
     .modal-confirm {
-      max-width: 420px;
+      max-width: 440px;
     }
     .modal-cabecera {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      margin-bottom: 1.25rem;
     }
     .modal-cabecera h3 {
       margin: 0;
       font-size: 1.2rem;
-      color: #0f172a;
+      color: var(--text);
     }
     .cerrar {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
       border: none;
+      border-radius: var(--radius-sm);
       background: transparent;
-      font-size: 1.1rem;
-      color: #94a3b8;
+      font-size: 1rem;
+      color: var(--text-subtle);
       cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .cerrar:hover {
+      background: var(--surface-muted);
+      color: var(--text);
     }
     .campos {
       display: grid;
@@ -771,25 +873,27 @@ interface FormularioCredito {
     .campos label {
       display: flex;
       flex-direction: column;
-      gap: 0.3rem;
-      font-size: 0.82rem;
+      gap: 0.35rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: #334155;
     }
     .campos input,
     .campos select {
-      padding: 0.6rem 0.7rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
+      padding: 0.62rem 0.75rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
       font-size: 0.95rem;
+      font-family: inherit;
       outline: none;
       width: 100%;
-      background: #fff;
+      background: var(--surface);
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     .campos input:focus,
     .campos select:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-ring);
     }
     .input-con-toggle {
       display: flex;
@@ -802,100 +906,113 @@ interface FormularioCredito {
     }
     .toggle {
       display: flex;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
       overflow: hidden;
     }
     .toggle button {
       border: none;
-      background: #fff;
-      color: #64748b;
-      padding: 0 0.7rem;
+      background: var(--surface);
+      color: var(--text-muted);
+      padding: 0 0.75rem;
       font-size: 0.95rem;
       font-weight: 700;
+      font-family: inherit;
       cursor: pointer;
+      transition: background 0.12s;
     }
     .toggle button + button {
-      border-left: 1px solid #cbd5e1;
+      border-left: 1px solid var(--border-strong);
     }
     .toggle button.activo {
-      background: #6366f1;
+      background: var(--primary);
       color: #fff;
     }
     .nota {
-      margin: 0.9rem 0 0;
+      margin: 1rem 0 0;
       font-size: 0.78rem;
-      color: #94a3b8;
+      color: var(--text-subtle);
+      line-height: 1.5;
+      background: var(--surface-muted);
+      border-left: 3px solid var(--border-strong);
+      padding: 0.6rem 0.8rem;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
     }
     .texto-confirm {
       margin: 0 0 1rem;
       color: #334155;
       font-size: 0.92rem;
-      line-height: 1.5;
+      line-height: 1.55;
     }
     .campo-confirm {
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
-      font-size: 0.85rem;
+      gap: 0.4rem;
+      font-size: 0.84rem;
       font-weight: 600;
       color: #334155;
     }
     .campo-confirm input {
-      padding: 0.6rem 0.7rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
+      padding: 0.62rem 0.75rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
       font-size: 0.95rem;
+      font-family: inherit;
       outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     .campo-confirm input:focus {
-      border-color: #dc2626;
+      border-color: var(--danger);
       box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
     }
     .acciones {
       display: flex;
       justify-content: flex-end;
       gap: 0.6rem;
-      margin-top: 1.3rem;
+      margin-top: 1.5rem;
     }
     .btn-secundario {
-      padding: 0.55rem 1.1rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
-      background: #fff;
+      padding: 0.6rem 1.15rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: #334155;
       font-size: 0.9rem;
       font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
+      transition: background 0.15s;
     }
     .btn-secundario:hover {
-      background: #f1f5f9;
+      background: var(--surface-muted);
     }
 
     /* --- Pestañas (tabs) --- */
     .tabs {
       display: flex;
       gap: 0.3rem;
-      margin-bottom: 1.2rem;
-      border-bottom: 1px solid #e2e8f0;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
     }
     .tabs button {
       border: none;
       background: transparent;
-      padding: 0.6rem 1.1rem;
+      padding: 0.65rem 1.15rem;
       font-size: 0.95rem;
       font-weight: 600;
-      color: #64748b;
+      font-family: inherit;
+      color: var(--text-muted);
       cursor: pointer;
       border-bottom: 2px solid transparent;
       margin-bottom: -1px;
+      transition: color 0.15s;
     }
     .tabs button:hover {
-      color: #4f46e5;
+      color: var(--primary-strong);
     }
     .tabs button.activo {
-      color: #6366f1;
-      border-bottom-color: #6366f1;
+      color: var(--primary);
+      border-bottom-color: var(--primary);
     }
 
     /* --- Simulador --- */
@@ -903,58 +1020,66 @@ interface FormularioCredito {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 0.9rem;
-      margin: 1rem 0 1.3rem;
+      margin: 1.25rem 0 1.5rem;
     }
     .sim-campos label {
       display: flex;
       flex-direction: column;
-      gap: 0.3rem;
-      font-size: 0.82rem;
+      gap: 0.35rem;
+      font-size: 0.8rem;
       font-weight: 600;
       color: #334155;
     }
     .sim-campos input,
     .sim-campos select {
-      padding: 0.6rem 0.7rem;
-      border: 1px solid #cbd5e1;
-      border-radius: 10px;
+      padding: 0.62rem 0.75rem;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-sm);
       font-size: 0.95rem;
+      font-family: inherit;
       outline: none;
       width: 100%;
-      background: #fff;
+      background: var(--surface);
+      transition: border-color 0.15s, box-shadow 0.15s;
     }
     .sim-campos input:focus,
     .sim-campos select:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-ring);
     }
     .sim-resumen {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
       gap: 0.8rem;
-      margin-bottom: 1.3rem;
+      margin-bottom: 1.5rem;
     }
     .sim-resumen div {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 0.8rem 1rem;
+      background: linear-gradient(160deg, var(--surface-muted) 0%, #eef2f9 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 0.9rem 1rem;
       display: flex;
       flex-direction: column;
-      gap: 0.25rem;
+      gap: 0.3rem;
     }
     .sim-resumen span {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: #64748b;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
     }
     .sim-resumen b {
-      font-size: 1.05rem;
-      color: #0f172a;
+      font-size: 1.1rem;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+    .sim-resumen div:last-child b {
+      color: var(--primary-strong);
     }
     .tabla-scroll {
       overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
     }
     .tabla-sim {
       width: 100%;
@@ -964,33 +1089,39 @@ interface FormularioCredito {
     .tabla-sim th,
     .tabla-sim td {
       text-align: left;
-      padding: 0.6rem;
-      border-bottom: 1px solid #e2e8f0;
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid var(--border);
       white-space: nowrap;
     }
+    .tabla-sim tr:last-child td {
+      border-bottom: none;
+    }
+    .tabla-sim td {
+      font-variant-numeric: tabular-nums;
+    }
     .tabla-sim th {
-      color: #64748b;
+      background: var(--surface-muted);
+      color: var(--text-muted);
       font-weight: 600;
       text-transform: uppercase;
-      font-size: 0.72rem;
-      letter-spacing: 0.03em;
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
     }
     .sim-crear {
-      margin-top: 1.2rem;
+      margin-top: 1.25rem;
     }
 
     /* --- Responsivo --- */
     @media (max-width: 640px) {
-      .barra {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.6rem;
+      .barra-inner {
+        padding: 0.75rem 1rem;
       }
       .contenido {
-        padding: 1rem;
+        padding: 1.25rem 1rem 2.5rem;
       }
       .tarjeta {
-        padding: 1rem;
+        padding: 1.25rem 1rem;
+        border-radius: var(--radius);
       }
       .tarjeta-cabecera {
         flex-direction: column;
@@ -1013,6 +1144,18 @@ interface FormularioCredito {
       }
       .detalle-acciones button {
         flex: 1 1 auto;
+      }
+      .modal {
+        padding: 1.35rem;
+      }
+      th, td {
+        padding: 0.7rem 0.6rem;
+      }
+    }
+    @media (max-width: 460px) {
+      .usuario-nombre,
+      .marca-text small {
+        display: none;
       }
     }
 
