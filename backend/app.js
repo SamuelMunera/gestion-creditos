@@ -64,6 +64,8 @@ const creditoSchema = new mongoose.Schema(
     cantidadCuotas: Number,
     cuotasRestantes: Number,
     historialPagos: { type: [String], default: [] },
+    // Si la última cuota (la 12) se le regaló al cliente como incentivo.
+    cuotaRegalada: { type: Boolean, default: false },
   },
   {
     versionKey: false,
@@ -235,8 +237,12 @@ app.post("/api/creditos", verificarToken, conDB, async (req, res) => {
   // Monto de intereses: porcentaje sobre el producto o un valor fijo.
   const montoIntereses = tipo === "porcentaje" ? (producto * intereses) / 100 : intereses;
 
-  // El valor de la cuota se calcula automáticamente: (producto + intereses) / cuotas.
-  const valorCuota = cuotas > 0 ? Math.round((producto + montoIntereses) / cuotas) : 0;
+  // El valor de la cuota se calcula sobre UNA cuota menos (regla del negocio):
+  // con 12 cuotas se divide entre 11, de modo que en 11 pagos ya se recupera el
+  // total. Así la cuota 12 se puede regalar como incentivo sin perder dinero
+  // (o cobrarse como ganancia extra si el cliente no gana el incentivo).
+  const divisor = cuotas > 1 ? cuotas - 1 : cuotas;
+  const valorCuota = divisor > 0 ? Math.round((producto + montoIntereses) / divisor) : 0;
 
   try {
     const nuevo = await Credito.create({
@@ -289,6 +295,33 @@ app.post("/api/creditos/:id/pago", verificarToken, conDB, async (req, res) => {
     res.json(credito);
   } catch (e) {
     console.error("Error al registrar pago:", e.message);
+    res.status(500).json({ mensaje: "Error al actualizar la base de datos" });
+  }
+});
+
+// Regalar la última cuota: salda el crédito perdonando la cuota 12 como
+// incentivo. Solo aplica cuando queda exactamente 1 cuota (la última).
+app.post("/api/creditos/:id/regalar", verificarToken, conDB, async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    const credito = await Credito.findOne({ id });
+    if (!credito) {
+      return res.status(404).json({ mensaje: "Crédito no encontrado" });
+    }
+
+    if (credito.cuotasRestantes !== 1) {
+      return res
+        .status(400)
+        .json({ mensaje: "Solo se puede regalar la última cuota (debe quedar 1)" });
+    }
+
+    credito.cuotasRestantes = 0;
+    credito.cuotaRegalada = true;
+    await credito.save();
+
+    res.json(credito);
+  } catch (e) {
+    console.error("Error al regalar la cuota:", e.message);
     res.status(500).json({ mensaje: "Error al actualizar la base de datos" });
   }
 });

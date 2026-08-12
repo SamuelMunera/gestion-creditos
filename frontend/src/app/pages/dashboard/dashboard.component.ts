@@ -24,6 +24,7 @@ interface Credito {
   cantidadCuotas: number;
   cuotasRestantes: number;
   historialPagos: string[];
+  cuotaRegalada: boolean;
 }
 
 interface FormularioCredito {
@@ -109,6 +110,9 @@ interface FormularioCredito {
                     @if (estaEnMora(c)) {
                       <span class="badge-mora">⚠ En mora</span>
                     }
+                    @if (c.cuotaRegalada) {
+                      <span class="badge-regalo">🎁 Cuota regalada</span>
+                    }
                   </td>
                   <td>{{ formatoFecha(c.fechaFinal) }}</td>
                   <td class="col-flecha">{{ estaAbierto(c.id) ? '▲' : '▼' }}</td>
@@ -171,6 +175,14 @@ interface FormularioCredito {
                           [title]="c.cuotasRestantes === 0 ? 'Ya no quedan cuotas' : 'Registrar el pago de una cuota'"
                         >
                           {{ c.cuotasRestantes === 0 ? 'Pagado' : 'Pago' }}
+                        </button>
+                        <button
+                          class="btn-regalo"
+                          (click)="pedirRegalar(c)"
+                          [disabled]="c.cuotasRestantes !== 1"
+                          [title]="c.cuotasRestantes === 1 ? 'Regalar la última cuota como incentivo' : 'Solo disponible cuando queda 1 cuota'"
+                        >
+                          🎁 Regalar cuota
                         </button>
                         <button class="btn-historial" (click)="abrirHistorial(c)">
                           Historial
@@ -261,8 +273,13 @@ interface FormularioCredito {
                   </thead>
                   <tbody>
                     @for (cuota of simCuotas(); track cuota.numero) {
-                      <tr>
-                        <td>{{ cuota.numero }}</td>
+                      <tr [class.fila-regalo]="cuota.regalo">
+                        <td>
+                          {{ cuota.numero }}
+                          @if (cuota.regalo) {
+                            <span class="badge-regalo">🎁 Regalable</span>
+                          }
+                        </td>
                         <td>{{ formatoFecha(cuota.fecha) }}</td>
                         <td>{{ formatoMoneda(cuota.valor) }}</td>
                       </tr>
@@ -270,6 +287,11 @@ interface FormularioCredito {
                   </tbody>
                 </table>
               </div>
+              <p class="nota">
+                La cuota se calcula sobre {{ (sim.cantidadCuotas || 0) - 1 }} cuotas (una menos):
+                con las primeras se recupera el total. La última (🎁) se puede cobrar como
+                ganancia extra o regalar al cliente como incentivo de pago.
+              </p>
               <button class="btn-crear sim-crear" (click)="crearDesdeSimulacion()">
                 ＋ Crear crédito con estos datos
               </button>
@@ -483,6 +505,39 @@ interface FormularioCredito {
             </button>
           </div>
         </form>
+      </div>
+    }
+
+    @if (mostrandoRegalo()) {
+      <div class="overlay" (click)="cerrarRegalo()">
+        <div class="modal modal-confirm" (click)="$event.stopPropagation()">
+          <div class="modal-cabecera">
+            <h3>Regalar última cuota</h3>
+            <button type="button" class="cerrar" (click)="cerrarRegalo()">✕</button>
+          </div>
+
+          <p class="texto-confirm">
+            Vas a regalar la última cuota de
+            <b>{{ creditoRegalo()?.nombre }}</b> como incentivo. El crédito quedará
+            <b>saldado</b> y no se cobrará esta cuota.
+          </p>
+
+          @if (errorRegalo()) {
+            <p class="error">{{ errorRegalo() }}</p>
+          }
+
+          <div class="acciones">
+            <button type="button" class="btn-secundario" (click)="cerrarRegalo()">Cancelar</button>
+            <button
+              type="button"
+              class="btn-regalo"
+              [disabled]="regalandoCuota()"
+              (click)="confirmarRegalar()"
+            >
+              {{ regalandoCuota() ? 'Regalando…' : '🎁 Regalar cuota' }}
+            </button>
+          </div>
+        </div>
       </div>
     }
 
@@ -783,6 +838,25 @@ interface FormularioCredito {
     .btn-historial:hover {
       background: var(--surface-muted);
     }
+    .btn-regalo {
+      padding: 0.55rem 1.25rem;
+      border: 1px solid #c4b5fd;
+      border-radius: var(--radius-sm);
+      background: #f5f3ff;
+      color: #6d28d9;
+      font-size: 0.9rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-regalo:hover:not(:disabled) {
+      background: #ede9fe;
+    }
+    .btn-regalo:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
     .alerta-mora {
       display: flex;
       align-items: center;
@@ -813,6 +887,20 @@ interface FormularioCredito {
     }
     .fila-mora:hover {
       background: var(--danger-soft);
+    }
+    .badge-regalo {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.14rem 0.55rem;
+      border-radius: var(--radius-full);
+      background: #ede9fe;
+      color: #6d28d9;
+      font-size: 0.68rem;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+    .fila-regalo td {
+      background: #faf5ff;
     }
     .lista-historial {
       margin: 0 0 0.5rem;
@@ -1260,6 +1348,12 @@ export class DashboardComponent implements OnInit {
   mostrandoHistorial = signal(false);
   creditoHistorial = signal<Credito | null>(null);
 
+  // Regalar última cuota
+  mostrandoRegalo = signal(false);
+  regalandoCuota = signal(false);
+  errorRegalo = signal('');
+  creditoRegalo = signal<Credito | null>(null);
+
   // Vista activa (pestañas) y estado del simulador
   vista = signal<'creditos' | 'simulador'>('creditos');
   sim: {
@@ -1370,6 +1464,41 @@ export class DashboardComponent implements OnInit {
       });
   }
 
+  // --- Regalar última cuota (incentivo) ---
+  pedirRegalar(c: Credito): void {
+    if (c.cuotasRestantes !== 1) return;
+    this.creditoRegalo.set(c);
+    this.errorRegalo.set('');
+    this.mostrandoRegalo.set(true);
+  }
+
+  cerrarRegalo(): void {
+    this.mostrandoRegalo.set(false);
+    this.creditoRegalo.set(null);
+  }
+
+  confirmarRegalar(): void {
+    const c = this.creditoRegalo();
+    if (!c) return;
+
+    this.regalandoCuota.set(true);
+    this.errorRegalo.set('');
+
+    this.http.post<Credito>(`${this.apiUrl}/${c.id}/regalar`, {}).subscribe({
+      next: (actualizado) => {
+        this.creditos.update((lista) =>
+          lista.map((x) => (x.id === actualizado.id ? actualizado : x))
+        );
+        this.regalandoCuota.set(false);
+        this.cerrarRegalo();
+      },
+      error: (err) => {
+        this.errorRegalo.set(err?.error?.mensaje ?? 'No se pudo regalar la cuota.');
+        this.regalandoCuota.set(false);
+      },
+    });
+  }
+
   // --- Historial de pagos ---
   abrirHistorial(c: Credito): void {
     this.creditoHistorial.set(c);
@@ -1454,8 +1583,11 @@ export class DashboardComponent implements OnInit {
   }
 
   simValorCuota(): number {
+    // La cuota se calcula sobre una cuota menos: con 12 cuotas, se divide entre 11
+    // (la 12 es la que se puede regalar como incentivo).
     const cuotas = Number(this.sim.cantidadCuotas) || 0;
-    return cuotas > 0 ? Math.round(this.simTotal() / cuotas) : 0;
+    const divisor = cuotas > 1 ? cuotas - 1 : cuotas;
+    return divisor > 0 ? Math.round(this.simTotal() / divisor) : 0;
   }
 
   simFechaFinal(): string {
@@ -1464,16 +1596,18 @@ export class DashboardComponent implements OnInit {
     return this.sumarDias(this.sim.fechaInicial, this.sim.frecuenciaPago * cuotas);
   }
 
-  simCuotas(): { numero: number; fecha: string; valor: number }[] {
+  simCuotas(): { numero: number; fecha: string; valor: number; regalo: boolean }[] {
     const cuotas = Number(this.sim.cantidadCuotas) || 0;
     if (!this.sim.fechaInicial || cuotas <= 0) return [];
     const valor = this.simValorCuota();
-    const filas: { numero: number; fecha: string; valor: number }[] = [];
+    const filas: { numero: number; fecha: string; valor: number; regalo: boolean }[] = [];
     for (let n = 1; n <= cuotas; n++) {
       filas.push({
         numero: n,
         fecha: this.sumarDias(this.sim.fechaInicial, this.sim.frecuenciaPago * n),
         valor,
+        // La última cuota es la que se puede regalar como incentivo.
+        regalo: cuotas > 1 && n === cuotas,
       });
     }
     return filas;
