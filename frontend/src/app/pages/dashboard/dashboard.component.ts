@@ -67,6 +67,7 @@ interface FormularioCredito {
         <div class="tabs">
           <button [class.activo]="vista() === 'simulador'" (click)="vista.set('simulador')">Simulador</button>
           <button [class.activo]="vista() === 'creditos'" (click)="vista.set('creditos')">Créditos</button>
+          <button [class.activo]="vista() === 'finanzas'" (click)="vista.set('finanzas')">Finanzas</button>
         </div>
 
         @if (vista() === 'creditos') {
@@ -198,6 +199,101 @@ interface FormularioCredito {
             </tbody>
           </table>
         }
+        } @else if (vista() === 'finanzas') {
+          <div class="fin">
+            <div class="tarjeta-cabecera">
+              <div>
+                <h2>Finanzas del negocio</h2>
+                <p class="ayuda">Resumen calculado con todos los créditos registrados.</p>
+              </div>
+              <button class="btn-imprimir" (click)="imprimir()">🖨 Imprimir</button>
+            </div>
+
+            <div class="fin-grid">
+              <div class="fin-card">
+                <span>Capital prestado</span>
+                <b>{{ formatoMoneda(finCapital()) }}</b>
+                <small>En {{ finActivos() }} crédito(s) activo(s)</small>
+              </div>
+              <div class="fin-card fin-card-ok">
+                <span>Total recaudado</span>
+                <b>{{ formatoMoneda(finRecaudado()) }}</b>
+                <small>{{ finPagosTotales() }} cuota(s) pagada(s)</small>
+              </div>
+              <div class="fin-card fin-card-warn">
+                <span>Por cobrar</span>
+                <b>{{ formatoMoneda(finPorCobrar()) }}</b>
+                <small>{{ finCuotasPorCobrar() }} cuota(s) pendiente(s)</small>
+              </div>
+              <div class="fin-card fin-card-profit">
+                <span>Ganancia por intereses</span>
+                <b>{{ formatoMoneda(finInteres()) }}</b>
+                <small>Proyectada sobre la cartera</small>
+              </div>
+              <div class="fin-card">
+                <span>Recaudado este mes</span>
+                <b>{{ formatoMoneda(finRecaudoMes()) }}</b>
+                <small>{{ nombreMesActual() }}</small>
+              </div>
+              <div class="fin-card" [class.fin-card-danger]="finMora().length > 0">
+                <span>En mora</span>
+                <b>{{ finMora().length }}</b>
+                <small>{{ formatoMoneda(finMontoMora()) }} por cobrar</small>
+              </div>
+              <div class="fin-card">
+                <span>Créditos saldados</span>
+                <b>{{ finSaldados() }}</b>
+                <small>de {{ creditos().length }} en total</small>
+              </div>
+              <div class="fin-card fin-card-gift">
+                <span>Cuotas regaladas</span>
+                <b>{{ finRegaladas() }}</b>
+                <small>{{ formatoMoneda(finMontoRegalado()) }} en incentivos</small>
+              </div>
+            </div>
+
+            @if (creditos().length === 0) {
+              <p class="cargando">No hay créditos registrados todavía.</p>
+            } @else {
+              <h3 class="fin-subtitulo">Detalle por crédito</h3>
+              <div class="tabla-scroll">
+                <table class="tabla-sim">
+                  <thead>
+                    <tr>
+                      <th>Nombre</th>
+                      <th>Capital</th>
+                      <th>Intereses</th>
+                      <th>Recaudado</th>
+                      <th>Por cobrar</th>
+                      <th>Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (c of creditos(); track c.id) {
+                      <tr>
+                        <td>{{ c.nombre }}</td>
+                        <td>{{ formatoMoneda(c.valorProducto) }}</td>
+                        <td>{{ formatoMoneda(montoInteres(c)) }}</td>
+                        <td>{{ formatoMoneda(recaudadoCredito(c)) }}</td>
+                        <td>{{ formatoMoneda(porCobrarCredito(c)) }}</td>
+                        <td>
+                          @if (c.cuotaRegalada) {
+                            <span class="badge-regalo">🎁 Regalada</span>
+                          } @else if (estaEnMora(c)) {
+                            <span class="badge-mora">⚠ En mora</span>
+                          } @else if (c.cuotasRestantes === 0) {
+                            <span class="badge-ok">✓ Saldado</span>
+                          } @else {
+                            {{ c.cuotasRestantes }}/{{ c.cantidadCuotas }} cuotas
+                          }
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+          </div>
         } @else {
           <div class="sim">
             <div>
@@ -1232,6 +1328,64 @@ interface FormularioCredito {
       margin-top: 1.25rem;
     }
 
+    /* --- Finanzas --- */
+    .fin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 0.9rem;
+      margin: 1.25rem 0 1.75rem;
+    }
+    .fin-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--border-strong);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      box-shadow: var(--shadow);
+    }
+    .fin-card span {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .fin-card b {
+      font-size: 1.4rem;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+      line-height: 1.1;
+    }
+    .fin-card small {
+      font-size: 0.72rem;
+      color: var(--text-subtle);
+    }
+    .fin-card-ok { border-left-color: var(--success); }
+    .fin-card-warn { border-left-color: #f59e0b; }
+    .fin-card-profit { border-left-color: var(--primary); }
+    .fin-card-profit b { color: var(--primary-strong); }
+    .fin-card-danger { border-left-color: #ef4444; }
+    .fin-card-danger b { color: var(--danger-strong); }
+    .fin-card-gift { border-left-color: #8b5cf6; }
+    .fin-card-gift b { color: #6d28d9; }
+    .fin-subtitulo {
+      margin: 0 0 0.75rem;
+      font-size: 1rem;
+      color: var(--text);
+    }
+    .badge-ok {
+      display: inline-block;
+      padding: 0.14rem 0.55rem;
+      border-radius: var(--radius-full);
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+
     /* --- Responsivo --- */
     @media (max-width: 640px) {
       .barra-inner {
@@ -1355,7 +1509,7 @@ export class DashboardComponent implements OnInit {
   creditoRegalo = signal<Credito | null>(null);
 
   // Vista activa (pestañas) y estado del simulador
-  vista = signal<'creditos' | 'simulador'>('creditos');
+  vista = signal<'creditos' | 'simulador' | 'finanzas'>('creditos');
   sim: {
     valorProducto: number | null;
     valorIntereses: number | null;
@@ -1521,6 +1675,97 @@ export class DashboardComponent implements OnInit {
 
   creditosEnMora(): Credito[] {
     return this.creditos().filter((c) => this.estaEnMora(c));
+  }
+
+  // --- Finanzas (todo se calcula a partir de los créditos cargados) ---
+  // Monto de intereses de un crédito (porcentaje sobre el producto o valor fijo).
+  montoInteres(c: Credito): number {
+    return c.tipoInteres === 'porcentaje'
+      ? (c.valorProducto * c.valorIntereses) / 100
+      : c.valorIntereses;
+  }
+
+  // Dinero ya recibido: cada pago registrado equivale a una cuota.
+  recaudadoCredito(c: Credito): number {
+    return c.historialPagos.length * c.valorCuota;
+  }
+
+  // Dinero pendiente: cuotas que faltan por pagar.
+  porCobrarCredito(c: Credito): number {
+    return c.cuotasRestantes * c.valorCuota;
+  }
+
+  private sumar(fn: (c: Credito) => number): number {
+    return this.creditos().reduce((total, c) => total + fn(c), 0);
+  }
+
+  finCapital(): number {
+    return this.sumar((c) => c.valorProducto || 0);
+  }
+
+  finRecaudado(): number {
+    return this.sumar((c) => this.recaudadoCredito(c));
+  }
+
+  finPorCobrar(): number {
+    return this.sumar((c) => this.porCobrarCredito(c));
+  }
+
+  finInteres(): number {
+    return this.sumar((c) => this.montoInteres(c));
+  }
+
+  finPagosTotales(): number {
+    return this.sumar((c) => c.historialPagos.length);
+  }
+
+  finCuotasPorCobrar(): number {
+    return this.sumar((c) => c.cuotasRestantes);
+  }
+
+  finActivos(): number {
+    return this.creditos().filter((c) => c.cuotasRestantes > 0).length;
+  }
+
+  finSaldados(): number {
+    return this.creditos().filter((c) => c.cuotasRestantes === 0).length;
+  }
+
+  finMora(): Credito[] {
+    return this.creditosEnMora();
+  }
+
+  finMontoMora(): number {
+    return this.creditosEnMora().reduce(
+      (total, c) => total + this.porCobrarCredito(c),
+      0
+    );
+  }
+
+  finRegaladas(): number {
+    return this.creditos().filter((c) => c.cuotaRegalada).length;
+  }
+
+  finMontoRegalado(): number {
+    return this.creditos()
+      .filter((c) => c.cuotaRegalada)
+      .reduce((total, c) => total + c.valorCuota, 0);
+  }
+
+  // Recaudado en el mes actual: pagos cuya fecha cae en el mes en curso.
+  finRecaudoMes(): number {
+    const mes = this.hoyISO().slice(0, 7); // YYYY-MM
+    return this.sumar(
+      (c) =>
+        c.historialPagos.filter((f) => f.startsWith(mes)).length * c.valorCuota
+    );
+  }
+
+  nombreMesActual(): string {
+    return new Date().toLocaleDateString('es-CO', {
+      month: 'long',
+      year: 'numeric',
+    });
   }
 
   private hoyISO(): string {
