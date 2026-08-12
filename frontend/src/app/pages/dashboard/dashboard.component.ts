@@ -235,6 +235,16 @@ interface FormularioCredito {
                 <b>{{ formatoMoneda(finRecaudoMes()) }}</b>
                 <small>{{ nombreMesActual() }}</small>
               </div>
+              <div class="fin-card fin-card-profit">
+                <span>Esperado esta semana</span>
+                <b>{{ formatoMoneda(esperadoSemanaActual()) }}</b>
+                <small>Cuotas programadas</small>
+              </div>
+              <div class="fin-card fin-card-ok">
+                <span>Recaudado esta semana</span>
+                <b>{{ formatoMoneda(recaudoSemanaActual()) }}</b>
+                <small>Pagos recibidos</small>
+              </div>
               <div class="fin-card" [class.fin-card-danger]="finMora().length > 0">
                 <span>En mora</span>
                 <b>{{ finMora().length }}</b>
@@ -251,6 +261,43 @@ interface FormularioCredito {
                 <small>{{ formatoMoneda(finMontoRegalado()) }} en incentivos</small>
               </div>
             </div>
+
+            @if (semanas().length > 0) {
+              <h3 class="fin-subtitulo">Recaudo por semana</h3>
+              <div class="tabla-scroll">
+                <table class="tabla-sim">
+                  <thead>
+                    <tr>
+                      <th>Semana</th>
+                      <th>Esperado</th>
+                      <th>Recaudado real</th>
+                      <th>Diferencia</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (s of semanas(); track s.inicio) {
+                      <tr [class.fila-semana-actual]="s.actual">
+                        <td>
+                          {{ formatoFechaCorta(s.inicio) }} – {{ formatoFechaCorta(s.fin) }}
+                          <small class="anio-semana">{{ s.inicio.slice(0, 4) }}</small>
+                          @if (s.actual) {
+                            <span class="badge-semana">Esta semana</span>
+                          }
+                        </td>
+                        <td>{{ formatoMoneda(s.esperado) }}</td>
+                        <td>{{ formatoMoneda(s.real) }}</td>
+                        <td
+                          [class.dif-neg]="s.real - s.esperado < 0"
+                          [class.dif-pos]="s.real - s.esperado > 0"
+                        >
+                          {{ formatoMoneda(s.real - s.esperado) }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
 
             @if (creditos().length === 0) {
               <p class="cargando">No hay créditos registrados todavía.</p>
@@ -1385,6 +1432,27 @@ interface FormularioCredito {
       font-size: 0.68rem;
       font-weight: 700;
     }
+    .anio-semana {
+      color: var(--text-subtle);
+      font-size: 0.72rem;
+      margin-left: 0.15rem;
+    }
+    .badge-semana {
+      display: inline-block;
+      margin-left: 0.5rem;
+      padding: 0.14rem 0.55rem;
+      border-radius: var(--radius-full);
+      background: var(--primary-soft);
+      color: var(--primary-strong);
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+    .fila-semana-actual td {
+      background: var(--primary-soft);
+      font-weight: 600;
+    }
+    .dif-neg { color: var(--danger-strong); font-weight: 600; }
+    .dif-pos { color: #15803d; font-weight: 600; }
 
     /* --- Responsivo --- */
     @media (max-width: 640px) {
@@ -1766,6 +1834,63 @@ export class DashboardComponent implements OnInit {
       month: 'long',
       year: 'numeric',
     });
+  }
+
+  // El lunes de la semana (YYYY-MM-DD) a la que pertenece una fecha.
+  private lunesDeSemana(iso: string): string {
+    const d = new Date(iso + 'T00:00:00Z');
+    const dia = d.getUTCDay(); // 0=domingo … 6=sábado
+    const desplazamiento = dia === 0 ? -6 : 1 - dia; // llevar al lunes
+    d.setUTCDate(d.getUTCDate() + desplazamiento);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // Recaudo por semana: esperado (cronograma completo de cuotas) vs real (pagos
+  // efectivos). Cada cuota/pago se ubica en la semana de su fecha.
+  semanas(): { inicio: string; fin: string; esperado: number; real: number; actual: boolean }[] {
+    const mapa = new Map<string, { esperado: number; real: number }>();
+    const acumular = (iso: string, campo: 'esperado' | 'real', monto: number) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return;
+      const clave = this.lunesDeSemana(iso);
+      const entrada = mapa.get(clave) ?? { esperado: 0, real: 0 };
+      entrada[campo] += monto;
+      mapa.set(clave, entrada);
+    };
+
+    for (const c of this.creditos()) {
+      // Esperado: fecha inicial + frecuencia * n, para cada cuota programada.
+      for (let n = 1; n <= c.cantidadCuotas; n++) {
+        acumular(this.sumarDias(c.fechaInicial, c.frecuenciaPago * n), 'esperado', c.valorCuota);
+      }
+      // Real: cada pago registrado equivale a una cuota.
+      for (const fecha of c.historialPagos) {
+        acumular(fecha, 'real', c.valorCuota);
+      }
+    }
+
+    const semanaActual = this.lunesDeSemana(this.hoyISO());
+    return [...mapa.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([inicio, v]) => ({
+        inicio,
+        fin: this.sumarDias(inicio, 6),
+        esperado: v.esperado,
+        real: v.real,
+        actual: inicio === semanaActual,
+      }));
+  }
+
+  esperadoSemanaActual(): number {
+    return this.semanas().find((s) => s.actual)?.esperado ?? 0;
+  }
+
+  recaudoSemanaActual(): number {
+    return this.semanas().find((s) => s.actual)?.real ?? 0;
+  }
+
+  formatoFechaCorta(iso: string): string {
+    const [, mes, dia] = iso.split('-');
+    return `${dia}/${mes}`;
   }
 
   private hoyISO(): string {
