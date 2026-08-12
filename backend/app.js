@@ -50,6 +50,9 @@ const creditoSchema = new mongoose.Schema(
   {
     id: { type: Number, required: true, unique: true, index: true },
     nombre: { type: String, required: true },
+    nombreProducto: String,
+    cedula: String,
+    telefono: String,
     fechaInicial: String,
     fechaFinal: String,
     valorProducto: Number,
@@ -201,6 +204,9 @@ app.get("/api/creditos", verificarToken, conDB, async (req, res) => {
 app.post("/api/creditos", verificarToken, conDB, async (req, res) => {
   const {
     nombre,
+    nombreProducto,
+    cedula,
+    telefono,
     fechaInicial,
     valorProducto,
     valorIntereses,
@@ -236,6 +242,9 @@ app.post("/api/creditos", verificarToken, conDB, async (req, res) => {
     const nuevo = await Credito.create({
       id: await siguienteId(),
       nombre,
+      nombreProducto: nombreProducto || "",
+      cedula: cedula || "",
+      telefono: telefono || "",
       fechaInicial,
       // La fecha final se calcula: fecha inicial + (frecuencia * cantidad de cuotas).
       fechaFinal: cuotas > 0 ? sumarDias(fechaInicial, frecuencia * cuotas) : fechaInicial,

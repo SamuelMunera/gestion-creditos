@@ -10,6 +10,9 @@ type TipoInteres = 'porcentaje' | 'fijo';
 interface Credito {
   id: number;
   nombre: string;
+  nombreProducto: string;
+  cedula: string;
+  telefono: string;
   fechaInicial: string;
   fechaFinal: string;
   valorProducto: number;
@@ -25,6 +28,9 @@ interface Credito {
 
 interface FormularioCredito {
   nombre: string;
+  nombreProducto: string;
+  cedula: string;
+  telefono: string;
   fechaInicial: string;
   valorProducto: number | null;
   valorIntereses: number | null;
@@ -111,6 +117,18 @@ interface FormularioCredito {
                   <tr class="detalle">
                     <td colspan="4">
                       <div class="detalle-grid">
+                        <div>
+                          <span>Nombre del producto</span>
+                          <b>{{ c.nombreProducto || '—' }}</b>
+                        </div>
+                        <div>
+                          <span>Cédula</span>
+                          <b>{{ c.cedula || '—' }}</b>
+                        </div>
+                        <div>
+                          <span>Teléfono</span>
+                          <b>{{ c.telefono || '—' }}</b>
+                        </div>
                         <div>
                           <span>Valor producto</span>
                           <b>{{ formatoMoneda(c.valorProducto) }}</b>
@@ -315,6 +333,21 @@ interface FormularioCredito {
             <label class="ancho-total">
               Nombre
               <input name="nombre" [(ngModel)]="form.nombre" required placeholder="Nombre de la persona" />
+            </label>
+
+            <label class="ancho-total">
+              Nombre del producto
+              <input name="nombreProducto" [(ngModel)]="form.nombreProducto" placeholder="Ej. Nevera, moto, etc." />
+            </label>
+
+            <label>
+              Cédula
+              <input name="cedula" inputmode="numeric" [(ngModel)]="form.cedula" placeholder="Número de cédula" />
+            </label>
+
+            <label>
+              Número telefónico
+              <input type="tel" name="telefono" inputmode="tel" [(ngModel)]="form.telefono" placeholder="Número de contacto" />
             </label>
 
             <label>
@@ -1449,6 +1482,9 @@ export class DashboardComponent implements OnInit {
   crearDesdeSimulacion(): void {
     this.form = {
       nombre: '',
+      nombreProducto: '',
+      cedula: '',
+      telefono: '',
       fechaInicial: this.sim.fechaInicial,
       valorProducto: this.sim.valorProducto,
       valorIntereses: this.sim.valorIntereses,
@@ -1506,6 +1542,9 @@ export class DashboardComponent implements OnInit {
   private formVacio(): FormularioCredito {
     return {
       nombre: '',
+      nombreProducto: '',
+      cedula: '',
+      telefono: '',
       fechaInicial: '',
       valorProducto: null,
       valorIntereses: null,
