@@ -34,14 +34,9 @@ const USUARIOS_LOGIN = [
 ];
 
 // Datos de ejemplo (semilla) para poblar la BD la primera vez.
-const SEMILLA = [
-  { id: 1, nombre: "Ana Gómez",    fechaInicial: "2026-07-16", fechaFinal: "2026-12-15", valorProducto: 5000000, valorIntereses: 5,      tipoInteres: "porcentaje", valorCuota: 437500, frecuenciaPago: 30, fechaPago: "2026-08-15", cantidadCuotas: 12, cuotasRestantes: 8,  historialPagos: ["2026-04-16", "2026-05-16", "2026-06-15", "2026-07-15"] },
-  { id: 2, nombre: "Luis Pérez",   fechaInicial: "2026-08-05", fechaFinal: "2027-03-20", valorProducto: 8000000, valorIntereses: 800000, tipoInteres: "fijo",       valorCuota: 488889, frecuenciaPago: 15, fechaPago: "2026-08-20", cantidadCuotas: 18, cuotasRestantes: 18, historialPagos: [] },
-  { id: 3, nombre: "María Ruiz",   fechaInicial: "2026-07-29", fechaFinal: "2026-10-05", valorProducto: 3000000, valorIntereses: 3,      tipoInteres: "porcentaje", valorCuota: 515000, frecuenciaPago: 7,  fechaPago: "2026-07-20", cantidadCuotas: 6,  cuotasRestantes: 5,  historialPagos: ["2026-07-13"] },
-  { id: 4, nombre: "Carlos Díaz",  fechaInicial: "2026-07-31", fechaFinal: "2027-01-30", valorProducto: 6500000, valorIntereses: 500000, tipoInteres: "fijo",       valorCuota: 466667, frecuenciaPago: 30, fechaPago: "2026-08-30", cantidadCuotas: 15, cuotasRestantes: 15, historialPagos: [] },
-  { id: 5, nombre: "Sofía Torres", fechaInicial: "2026-07-28", fechaFinal: "2026-11-12", valorProducto: 4200000, valorIntereses: 4,      tipoInteres: "porcentaje", valorCuota: 546000, frecuenciaPago: 15, fechaPago: "2026-08-12", cantidadCuotas: 8,  cuotasRestantes: 8,  historialPagos: [] },
-  { id: 6, nombre: "Jorge Vega",   fechaInicial: "2026-08-11", fechaFinal: "2027-05-18", valorProducto: 9000000, valorIntereses: 900000, tipoInteres: "fijo",       valorCuota: 412500, frecuenciaPago: 7,  fechaPago: "2026-08-18", cantidadCuotas: 24, cuotasRestantes: 24, historialPagos: [] },
-];
+// Vacío: la plataforma arranca sin datos de prueba. Los créditos se crean
+// desde la aplicación.
+const SEMILLA = [];
 
 // --- Modelo de MongoDB (Mongoose) ---
 // Se conserva el campo `id` numérico para no cambiar el frontend; además ocultamos
@@ -123,6 +118,7 @@ async function inicializarDatos() {
     console.error("No se pudo leer datos.json, se usa la semilla:", e.message);
   }
 
+  if (!iniciales.length) return; // sin semilla: la BD arranca vacía.
   await Credito.insertMany(iniciales);
   console.log(`Base de datos inicializada con ${iniciales.length} crédito(s).`);
 }
