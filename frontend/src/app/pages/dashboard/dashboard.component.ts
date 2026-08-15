@@ -208,8 +208,13 @@ interface FormularioCredito {
 
             <div class="fin-grid">
               <div class="fin-card">
-                <span>Capital prestado</span>
+                <span>Total capital prestado</span>
                 <b>{{ formatoMoneda(finCapital()) }}</b>
+                <small>En {{ creditos().length }} crédito(s)</small>
+              </div>
+              <div class="fin-card">
+                <span>Capital activo</span>
+                <b>{{ formatoMoneda(finCapitalActivo()) }}</b>
                 <small>En {{ finActivos() }} crédito(s) activo(s)</small>
               </div>
               <div class="fin-card fin-card-ok">
@@ -241,11 +246,6 @@ interface FormularioCredito {
                 <span>Recaudado esta semana</span>
                 <b>{{ formatoMoneda(recaudoSemanaActual()) }}</b>
                 <small>Pagos recibidos</small>
-              </div>
-              <div class="fin-card" [class.fin-card-danger]="finMora().length > 0">
-                <span>En mora</span>
-                <b>{{ finMora().length }}</b>
-                <small>{{ formatoMoneda(finMontoMora()) }} por cobrar</small>
               </div>
               <div class="fin-card">
                 <span>Créditos saldados</span>
@@ -1745,6 +1745,13 @@ export class DashboardComponent implements OnInit {
     return this.sumar((c) => c.valorProducto || 0);
   }
 
+  // Capital de los créditos activos (con cuotas pendientes por pagar).
+  finCapitalActivo(): number {
+    return this.creditos()
+      .filter((c) => c.cuotasRestantes > 0)
+      .reduce((total, c) => total + (c.valorProducto || 0), 0);
+  }
+
   finRecaudado(): number {
     return this.sumar((c) => this.recaudadoCredito(c));
   }
@@ -1771,17 +1778,6 @@ export class DashboardComponent implements OnInit {
 
   finSaldados(): number {
     return this.creditos().filter((c) => c.cuotasRestantes === 0).length;
-  }
-
-  finMora(): Credito[] {
-    return this.creditosEnMora();
-  }
-
-  finMontoMora(): number {
-    return this.creditosEnMora().reduce(
-      (total, c) => total + this.porCobrarCredito(c),
-      0
-    );
   }
 
   finRegaladas(): number {
