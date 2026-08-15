@@ -259,43 +259,6 @@ interface FormularioCredito {
               </div>
             </div>
 
-            @if (semanas().length > 0) {
-              <h3 class="fin-subtitulo">Recaudo por semana</h3>
-              <div class="tabla-scroll">
-                <table class="tabla-sim">
-                  <thead>
-                    <tr>
-                      <th>Semana</th>
-                      <th>Esperado</th>
-                      <th>Recaudado real</th>
-                      <th>Diferencia</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (s of semanas(); track s.inicio) {
-                      <tr [class.fila-semana-actual]="s.actual">
-                        <td>
-                          {{ formatoFechaCorta(s.inicio) }} – {{ formatoFechaCorta(s.fin) }}
-                          <small class="anio-semana">{{ s.inicio.slice(0, 4) }}</small>
-                          @if (s.actual) {
-                            <span class="badge-semana">Esta semana</span>
-                          }
-                        </td>
-                        <td>{{ formatoMoneda(s.esperado) }}</td>
-                        <td>{{ formatoMoneda(s.real) }}</td>
-                        <td
-                          [class.dif-neg]="s.real - s.esperado < 0"
-                          [class.dif-pos]="s.real - s.esperado > 0"
-                        >
-                          {{ formatoMoneda(s.real - s.esperado) }}
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
-              </div>
-            }
-
             @if (creditos().length === 0) {
               <p class="cargando">No hay créditos registrados todavía.</p>
             } @else {
