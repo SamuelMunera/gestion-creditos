@@ -25,6 +25,7 @@ interface Credito {
   cuotasRestantes: number;
   historialPagos: string[];
   cuotaRegalada: boolean;
+  cuotasRegaladas: number;
 }
 
 interface FormularioCredito {
@@ -176,8 +177,8 @@ interface FormularioCredito {
                         <button
                           class="btn-regalo"
                           (click)="pedirRegalar(c)"
-                          [disabled]="c.cuotasRestantes !== 1"
-                          [title]="c.cuotasRestantes === 1 ? 'Regalar la última cuota como incentivo' : 'Solo disponible cuando queda 1 cuota'"
+                          [disabled]="c.cuotasRestantes < 1 || c.cuotasRestantes > 2"
+                          [title]="(c.cuotasRestantes >= 1 && c.cuotasRestantes <= 2) ? 'Regalar una cuota como incentivo' : 'Solo disponible para las 2 últimas cuotas'"
                         >
                           🎁 Regalar cuota
                         </button>
@@ -649,14 +650,18 @@ interface FormularioCredito {
       <div class="overlay" (click)="cerrarRegalo()">
         <div class="modal modal-confirm" (click)="$event.stopPropagation()">
           <div class="modal-cabecera">
-            <h3>Regalar última cuota</h3>
+            <h3>Regalar una cuota</h3>
             <button type="button" class="cerrar" (click)="cerrarRegalo()">✕</button>
           </div>
 
           <p class="texto-confirm">
-            Vas a regalar la última cuota de
-            <b>{{ creditoRegalo()?.nombre }}</b> como incentivo. El crédito quedará
-            <b>saldado</b> y no se cobrará esta cuota.
+            Vas a regalar <b>una cuota</b> de
+            <b>{{ creditoRegalo()?.nombre }}</b> como incentivo (no se cobrará).
+            @if ((creditoRegalo()?.cuotasRestantes ?? 0) <= 1) {
+              El crédito quedará <b>saldado</b>.
+            } @else {
+              Quedará <b>1 cuota</b> por pagar.
+            }
           </p>
 
           @if (errorRegalo()) {
@@ -1682,7 +1687,7 @@ export class DashboardComponent implements OnInit {
 
   // --- Regalar última cuota (incentivo) ---
   pedirRegalar(c: Credito): void {
-    if (c.cuotasRestantes !== 1) return;
+    if (c.cuotasRestantes < 1 || c.cuotasRestantes > 2) return;
     this.creditoRegalo.set(c);
     this.errorRegalo.set('');
     this.mostrandoRegalo.set(true);
@@ -1755,7 +1760,7 @@ export class DashboardComponent implements OnInit {
     const pagadas =
       (c.cantidadCuotas || 0) -
       (c.cuotasRestantes || 0) -
-      (c.cuotaRegalada ? 1 : 0);
+      (c.cuotasRegaladas || 0);
     return pagadas > 0 ? pagadas : 0;
   }
 
@@ -1817,13 +1822,11 @@ export class DashboardComponent implements OnInit {
   }
 
   finRegaladas(): number {
-    return this.creditos().filter((c) => c.cuotaRegalada).length;
+    return this.sumar((c) => c.cuotasRegaladas || 0);
   }
 
   finMontoRegalado(): number {
-    return this.creditos()
-      .filter((c) => c.cuotaRegalada)
-      .reduce((total, c) => total + c.valorCuota, 0);
+    return this.sumar((c) => (c.cuotasRegaladas || 0) * c.valorCuota);
   }
 
   // Recaudado en el mes actual: pagos cuya fecha cae en el mes en curso.

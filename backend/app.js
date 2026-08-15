@@ -59,8 +59,10 @@ const creditoSchema = new mongoose.Schema(
     cantidadCuotas: Number,
     cuotasRestantes: Number,
     historialPagos: { type: [String], default: [] },
-    // Si la última cuota (la 12) se le regaló al cliente como incentivo.
+    // Si se regaló al menos una cuota al cliente como incentivo (para la insignia).
     cuotaRegalada: { type: Boolean, default: false },
+    // Cuántas cuotas se han regalado (p. ej. la 11 y/o la 12). Se cobran de menos.
+    cuotasRegaladas: { type: Number, default: 0 },
   },
   {
     versionKey: false,
@@ -240,6 +242,11 @@ app.post("/api/creditos", verificarToken, conDB, async (req, res) => {
   const divisor = cuotas > 1 ? cuotas - 1 : cuotas;
   const valorCuota = divisor > 0 ? Math.round((producto + montoIntereses) / divisor) : 0;
 
+  // Cuotas ya pagadas al momento de registrar el crédito (las que no quedan
+  // pendientes). Se usan para ubicar la próxima fecha de pago en el calendario.
+  const cuotasRest = Math.max(0, Number(cuotasRestantes) || 0);
+  const cuotasPagadasInicial = Math.max(0, cuotas - cuotasRest);
+
   try {
     const nuevo = await Credito.create({
       id: await siguienteId(),
@@ -255,10 +262,11 @@ app.post("/api/creditos", verificarToken, conDB, async (req, res) => {
       tipoInteres: tipo,
       valorCuota,
       frecuenciaPago: frecuencia,
-      // La próxima fecha de pago se calcula: fecha inicial + frecuencia.
-      fechaPago: sumarDias(fechaInicial, frecuencia),
+      // La próxima fecha de pago considera las cuotas ya pagadas: si ya se
+      // pagaron N cuotas, la siguiente es la (N+1) => fecha inicial + frecuencia*(N+1).
+      fechaPago: sumarDias(fechaInicial, frecuencia * (cuotasPagadasInicial + 1)),
       cantidadCuotas: cuotas,
-      cuotasRestantes: Number(cuotasRestantes) || 0,
+      cuotasRestantes: cuotasRest,
       historialPagos: [],
     });
     res.status(201).json(nuevo);
@@ -305,13 +313,15 @@ app.post("/api/creditos/:id/regalar", verificarToken, conDB, async (req, res) =>
       return res.status(404).json({ mensaje: "Crédito no encontrado" });
     }
 
-    if (credito.cuotasRestantes !== 1) {
+    // Se pueden regalar solo las dos últimas cuotas (la 11 y/o la 12), una a la vez.
+    if (credito.cuotasRestantes < 1 || credito.cuotasRestantes > 2) {
       return res
         .status(400)
-        .json({ mensaje: "Solo se puede regalar la última cuota (debe quedar 1)" });
+        .json({ mensaje: "Solo se pueden regalar las dos últimas cuotas (debe quedar 1 o 2)" });
     }
 
-    credito.cuotasRestantes = 0;
+    credito.cuotasRestantes -= 1;
+    credito.cuotasRegaladas = (credito.cuotasRegaladas || 0) + 1;
     credito.cuotaRegalada = true;
     await credito.save();
 
