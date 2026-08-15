@@ -109,11 +109,10 @@ interface FormularioCredito {
                   <td class="col-num">{{ c.id }}</td>
                   <td>
                     {{ c.nombre }}
-                    @if (estaEnMora(c)) {
+                    @if (c.cuotasRestantes === 0) {
+                      <span class="badge-ok">✓ Finalizado</span>
+                    } @else if (estaEnMora(c)) {
                       <span class="badge-mora">⚠ En mora</span>
-                    }
-                    @if (c.cuotaRegalada) {
-                      <span class="badge-regalo">🎁 Cuota regalada</span>
                     }
                   </td>
                   <td>{{ formatoFecha(c.fechaFinal) }}</td>
@@ -284,12 +283,10 @@ interface FormularioCredito {
                         <td>{{ formatoMoneda(recaudadoCredito(c)) }}</td>
                         <td>{{ formatoMoneda(porCobrarCredito(c)) }}</td>
                         <td>
-                          @if (c.cuotaRegalada) {
-                            <span class="badge-regalo">🎁 Regalada</span>
+                          @if (c.cuotasRestantes === 0) {
+                            <span class="badge-ok">✓ Finalizado</span>
                           } @else if (estaEnMora(c)) {
                             <span class="badge-mora">⚠ En mora</span>
-                          } @else if (c.cuotasRestantes === 0) {
-                            <span class="badge-ok">✓ Saldado</span>
                           } @else {
                             {{ c.cuotasRestantes }}/{{ c.cantidadCuotas }} cuotas
                           }
