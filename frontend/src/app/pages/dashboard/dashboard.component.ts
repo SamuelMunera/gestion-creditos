@@ -1747,9 +1747,21 @@ export class DashboardComponent implements OnInit {
       : c.valorIntereses;
   }
 
-  // Dinero ya recibido: cada pago registrado equivale a una cuota.
+  // Cuotas ya pagadas: las que ya no están pendientes. Se calcula a partir de
+  // cantidad y restantes (no del historial), para contar también las cuotas que
+  // el cliente ya había pagado ANTES de registrar el crédito en la app. La cuota
+  // regalada no cuenta como pagada porque no se cobró.
+  cuotasPagadas(c: Credito): number {
+    const pagadas =
+      (c.cantidadCuotas || 0) -
+      (c.cuotasRestantes || 0) -
+      (c.cuotaRegalada ? 1 : 0);
+    return pagadas > 0 ? pagadas : 0;
+  }
+
+  // Dinero ya recibido: cada cuota pagada equivale a una cuota.
   recaudadoCredito(c: Credito): number {
-    return c.historialPagos.length * c.valorCuota;
+    return this.cuotasPagadas(c) * c.valorCuota;
   }
 
   // Dinero pendiente: cuotas que faltan por pagar.
@@ -1778,7 +1790,7 @@ export class DashboardComponent implements OnInit {
   }
 
   finPagosTotales(): number {
-    return this.sumar((c) => c.historialPagos.length);
+    return this.sumar((c) => this.cuotasPagadas(c));
   }
 
   finCuotasPorCobrar(): number {
