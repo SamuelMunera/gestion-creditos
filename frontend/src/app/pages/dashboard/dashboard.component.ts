@@ -139,10 +139,6 @@ interface FormularioCredito {
                           <b>{{ formatoMoneda(c.valorProducto) }}</b>
                         </div>
                         <div>
-                          <span>Valor intereses</span>
-                          <b>{{ formatoInteres(c) }}</b>
-                        </div>
-                        <div>
                           <span>Valor cuota</span>
                           <b>{{ formatoMoneda(c.valorCuota) }}</b>
                         </div>
@@ -458,7 +454,6 @@ interface FormularioCredito {
               <th>Nombre</th>
               <th>Fecha final</th>
               <th>Valor producto</th>
-              <th>Intereses</th>
               <th>Valor cuota</th>
               <th>Frecuencia</th>
               <th>Próx. pago</th>
@@ -473,7 +468,6 @@ interface FormularioCredito {
                 <td>{{ c.nombre }}</td>
                 <td>{{ formatoFecha(c.fechaFinal) }}</td>
                 <td>{{ formatoMoneda(c.valorProducto) }}</td>
-                <td>{{ formatoInteres(c) }}</td>
                 <td>{{ formatoMoneda(c.valorCuota) }}</td>
                 <td>{{ textoFrecuencia(c.frecuenciaPago) }}</td>
                 <td>{{ formatoFecha(c.fechaPago) }}</td>
@@ -2015,12 +2009,6 @@ export class DashboardComponent implements OnInit {
       currency: 'COP',
       maximumFractionDigits: 0,
     }).format(valor);
-  }
-
-  formatoInteres(c: Credito): string {
-    return c.tipoInteres === 'porcentaje'
-      ? `${c.valorIntereses}%`
-      : this.formatoMoneda(c.valorIntereses);
   }
 
   formatoFecha(iso: string): string {
